@@ -1,0 +1,42 @@
+name: GUIDO Agentic Pipeline — CI
+
+# NOTE: This is a stub workflow. The build/test steps below will become
+# functional once the C# project (src/GUIDO.Agentic.Tests/*.csproj) is
+# initialized by the GUIDO agent.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore src/GUIDO.Agentic.Tests
+
+      - name: Build
+        run: dotnet build src/GUIDO.Agentic.Tests --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test src/GUIDO.Agentic.Tests --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
