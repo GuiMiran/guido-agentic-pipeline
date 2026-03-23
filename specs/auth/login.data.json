@@ -1,0 +1,52 @@
+{
+  "validUsers": [
+    {
+      "username": "standard_user",
+      "password": "secret_sauce",
+      "expectedResult": "success",
+      "description": "Standard user — full access"
+    },
+    {
+      "username": "problem_user",
+      "password": "secret_sauce",
+      "expectedResult": "success",
+      "description": "Problem user — broken images"
+    },
+    {
+      "username": "performance_glitch_user",
+      "password": "secret_sauce",
+      "expectedResult": "success",
+      "description": "Performance glitch user — slow login"
+    }
+  ],
+  "invalidUsers": [
+    {
+      "username": "locked_out_user",
+      "password": "secret_sauce",
+      "expectedResult": "error",
+      "expectedMessage": "Sorry, this user has been locked out.",
+      "description": "Locked-out user"
+    },
+    {
+      "username": "invalid_user",
+      "password": "wrong_password",
+      "expectedResult": "error",
+      "expectedMessage": "Username and password do not match any user in this service",
+      "description": "Invalid credentials"
+    }
+  ],
+  "emptyCredentialScenarios": [
+    {
+      "username": "",
+      "password": "",
+      "expectedMessage": "Username is required",
+      "description": "Both fields empty"
+    },
+    {
+      "username": "standard_user",
+      "password": "",
+      "expectedMessage": "Password is required",
+      "description": "Password missing"
+    }
+  ]
+}
