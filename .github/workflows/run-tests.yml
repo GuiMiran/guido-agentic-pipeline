@@ -1,0 +1,90 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [main, "feature/**", "copilot/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: E2E Tests — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Google Chrome (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+            | sudo tee /etc/apt/trusted.gpg.d/google-chrome.asc > /dev/null
+          echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/google-chrome.asc] http://dl.google.com/linux/chrome/deb/ stable main" \
+            | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update -q
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Restore NuGet packages
+        run: dotnet restore src/GUIDO.Agentic.Tests.slnx
+
+      - name: Build solution
+        run: dotnet build src/GUIDO.Agentic.Tests.slnx --no-restore --configuration Release
+
+      - name: Run tests
+        run: |
+          dotnet test src/GUIDO.Agentic.Tests.slnx \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory TestResults
+        env:
+          AppSettings__Browser: chrome
+          AppSettings__Headless: "true"
+          AppSettings__BaseUrl: "https://www.saucedemo.com"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults/
+
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-${{ matrix.os }}
+          path: allure-results/
+          if-no-files-found: ignore
+
+      - name: Generate Allure report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: allure-results
+          allure_report: allure-report
+          gh_pages: gh-pages
+          allure_history: allure-history
+
+      - name: Upload Allure report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-${{ matrix.os }}
+          path: allure-report/
+          if-no-files-found: ignore

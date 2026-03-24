@@ -15,21 +15,46 @@ Target URL: https://www.saucedemo.com
 - Pattern: Page Component Model
 
 ## Hard Rules
-- NEVER use Thread.Sleep — only WebDriverWait / explicit waits
-- NEVER hardcode URLs or credentials — use ConfigManager
-- NEVER generate code without a .feature backing it
-- ALL locators must exist in the feature's .context.md
-- If a locator is not in context → ASK, do not invent
+- NEVER use `Thread.Sleep` — only `WebDriverWait` / explicit waits via `BasePage` helpers
+- NEVER hardcode URLs or credentials — always use `ConfigManager`
+- NEVER generate code without a `.feature` file backing it
+- ALL locators must be declared in the feature's `.context.md`
+- If a locator is not in context → **ASK**, do not invent
 
 ## File Conventions
-- Pages → /src/GUIDO.Agentic.Tests/Pages/[Module]Page.cs
-- Page Components → /src/GUIDO.Agentic.Tests/Pages/Components/[Component].cs
-- Steps → /src/GUIDO.Agentic.Tests/StepDefinitions/[Module]Steps.cs
-- Specs → /specs/[module]/[feature].feature
-- Context → /specs/[module]/[feature].context.md
+- Pages → `src/GUIDO.Agentic.Tests/Pages/<Module>Page.cs`
+- Steps → `src/GUIDO.Agentic.Tests/StepDefinitions/<Module>Steps.cs`
+- Features → `src/GUIDO.Agentic.Tests/Features/<Module>.feature`
+- Specs → `specs/<module>/<feature>.feature`
+- Context → `specs/<module>/<feature>.context.md`
+- Data → `specs/<module>/<feature>.data.json`
+
+## Architecture Summary
+- `BasePage` — base class for all Page Objects with explicit wait helpers
+- `BaseTest` — base class for xUnit fixtures (manages driver lifecycle)
+- `WebDriverContext` — SpecFlow DI context (one driver per scenario)
+- `BrowserFactory` — creates `IWebDriver` instances (Chrome/Firefox, headless)
+- `ConfigManager` — reads `appsettings.json` (overrideable via env vars)
+- `DriverHooks` — SpecFlow `[BeforeScenario]`/`[AfterScenario]` hooks
 
 ## Agent Modes
-- GENERATE: spec → C# code
-- HEAL: test failure → root cause + fix proposal
-- REVIEW: code → violations + recommendations
-- COVERAGE: specs + code → GUIDO Scale score
+- **GENERATE**: spec → C# code → use `agent/prompts/generate.md`
+- **HEAL**: test failure → root cause + fix proposal → use `agent/prompts/heal.md`
+- **REVIEW**: code → violations + GUIDO Scale score → use `agent/prompts/review.md`
+
+## Build & Test
+```bash
+# Restore
+dotnet restore src/GUIDO.Agentic.Tests.slnx
+
+# Build
+dotnet build src/GUIDO.Agentic.Tests.slnx
+
+# Run all tests (headless)
+dotnet test src/GUIDO.Agentic.Tests.slnx \
+  --configuration Release \
+  -e AppSettings__Headless=true
+```
+
+## Global Context
+See `agent/context/_global.context.md` for the full architectural context.

@@ -3,6 +3,13 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# SpecFlow auto-generated test code (regenerated on build)
+*.feature.cs
+
+# Allure results (runtime artifacts)
+allure-results/
+allure-report/
+
 # User-specific files
 *.rsuser
 *.suo
