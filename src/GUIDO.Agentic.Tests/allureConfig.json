@@ -1,13 +1,6 @@
 {
   "allure": {
     "directory": "allure-results",
-    "title": "GUIDO Agentic Pipeline — Test Results",
-    "links": [
-      {
-        "name": "issue",
-        "type": "issue",
-        "url": "https://github.com/GuiMiran/guido-agentic-pipeline/issues/{}"
-      }
-    ]
+    "title": "GUIDO Agentic Pipeline — Test Report"
   }
 }
