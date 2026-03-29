@@ -1,41 +1,69 @@
-using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
 using GUIDO.Agentic.Tests.Core;
+using OpenQA.Selenium;
 
 namespace GUIDO.Agentic.Tests.Pages;
 
 /// <summary>
-/// Page Object for https://www.saucedemo.com
-/// Locators sourced from specs/auth/login.context.md
+/// Page Object for the SauceDemo login page (/).
+/// All locators are sourced from specs/auth/login.context.md.
 /// </summary>
-public class LoginPage
+public class LoginPage : BasePage
 {
-    private readonly IWebDriver _driver;
-    private readonly WebDriverWait _wait;
+    // Locators — sourced from login.context.md
+    private static readonly By UsernameField = By.Id("user-name");
+    private static readonly By PasswordField = By.Id("password");
+    private static readonly By LoginButton = By.Id("login-button");
+    private static readonly By ErrorMessage = By.CssSelector("[data-test='error']");
 
-    private IWebElement UsernameField => _driver.FindElement(By.Id("user-name"));
-    private IWebElement PasswordField => _driver.FindElement(By.Id("password"));
-    private IWebElement LoginButton => _driver.FindElement(By.Id("login-button"));
-    private IWebElement ErrorMessage => _wait.Until(d => d.FindElement(By.CssSelector("[data-test='error']")));
+    public LoginPage(IWebDriver driver) : base(driver) { }
 
-    public LoginPage(IWebDriver driver)
+    /// <summary>Navigates to the SauceDemo login page.</summary>
+    public LoginPage Open()
     {
-        _driver = driver;
-        _wait = new WebDriverWait(driver, TimeSpan.FromSeconds(ConfigManager.TimeoutSeconds));
+        NavigateTo();
+        return this;
     }
 
-    public void Navigate() => _driver.Navigate().GoToUrl(ConfigManager.BaseUrl);
+    /// <summary>Enters a username into the username field.</summary>
+    public LoginPage EnterUsername(string username)
+    {
+        var field = WaitForElement(UsernameField);
+        field.Clear();
+        field.SendKeys(username);
+        return this;
+    }
 
-    public void EnterUsername(string username) => UsernameField.SendKeys(username);
+    /// <summary>Enters a password into the password field.</summary>
+    public LoginPage EnterPassword(string password)
+    {
+        var field = WaitForElement(PasswordField);
+        field.Clear();
+        field.SendKeys(password);
+        return this;
+    }
 
-    public void EnterPassword(string password) => PasswordField.SendKeys(password);
+    /// <summary>Clicks the Login button.</summary>
+    public void ClickLogin()
+    {
+        WaitForClickable(LoginButton).Click();
+    }
 
-    public void ClickLogin() => LoginButton.Click();
+    /// <summary>Performs a full login flow with the supplied credentials.</summary>
+    public void Login(string username, string password)
+    {
+        EnterUsername(username);
+        EnterPassword(password);
+        ClickLogin();
+    }
 
-    public string GetErrorMessage() => ErrorMessage.Text;
+    /// <summary>Returns the visible error message text, or empty string if none.</summary>
+    public string GetErrorMessage()
+    {
+        return ElementExists(ErrorMessage)
+            ? Driver.FindElement(ErrorMessage).Text
+            : string.Empty;
+    }
 
-    public string GetCurrentUrl() => _driver.Url;
-
-    public string GetPageTitle() =>
-        _wait.Until(d => d.FindElement(By.CssSelector(".title"))).Text;
+    /// <summary>Returns true when the error message container is displayed.</summary>
+    public bool HasErrorMessage() => ElementExists(ErrorMessage);
 }

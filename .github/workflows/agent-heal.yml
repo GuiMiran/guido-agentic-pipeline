@@ -1,0 +1,140 @@
+name: Agent Auto-Heal
+
+on:
+  workflow_run:
+    workflows: ["Run Tests"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      failure_summary:
+        description: "Paste the test failure log or describe the failure"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  detect-failures:
+    name: Detect and analyse failures
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
+
+    outputs:
+      has_failures: ${{ steps.check.outputs.has_failures }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test results artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-ubuntu-latest
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: TestResults/
+        continue-on-error: true
+
+      - name: Check for failures
+        id: check
+        run: |
+          if ls TestResults/*.trx 2>/dev/null | head -1; then
+            echo "has_failures=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "has_failures=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_failures=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  heal:
+    name: Auto-heal failing tests
+    needs: detect-failures
+    runs-on: ubuntu-latest
+    if: needs.detect-failures.outputs.has_failures == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Parse failure log
+        id: parse
+        run: |
+          echo "Parsing failure information..."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FAILURE_SUMMARY="${{ github.event.inputs.failure_summary }}"
+          else
+            FAILURE_SUMMARY="Automated failure detected in CI run ${{ github.event.workflow_run.id }}"
+          fi
+          echo "failure_summary=${FAILURE_SUMMARY}" >> "$GITHUB_OUTPUT"
+
+      - name: Create healing task file
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          TASK_FILE="agent/tasks/pending/heal_${TIMESTAMP}.md"
+
+          cat > "${TASK_FILE}" << 'EOF'
+          # Auto-Heal Task
+          ## Triggered by
+          CI failure on run: ${{ github.event.workflow_run.id || 'manual' }}
+
+          ## Failure Summary
+          ${{ steps.parse.outputs.failure_summary }}
+
+          ## Instructions
+          Use the HEAL prompt (agent/prompts/heal.md) to:
+          1. Identify the root cause
+          2. Apply the minimal fix
+          3. Verify the fix does not break other tests
+          4. Update the relevant .context.md if locators changed
+
+          ## Status
+          PENDING
+          EOF
+
+          echo "Created task: ${TASK_FILE}"
+
+      - name: Open healing issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `[Auto-Heal] Test failure detected — ${new Date().toISOString().split('T')[0]}`;
+            const body = [
+              '## Automated Healing Task',
+              '',
+              '**Triggered by:** CI failure',
+              '**Run ID:** ${{ github.event.workflow_run.id || "manual" }}',
+              '',
+              '### Failure Summary',
+              '```',
+              '${{ steps.parse.outputs.failure_summary }}',
+              '```',
+              '',
+              '### Next Steps',
+              '1. Review the failure log in the Actions run',
+              '2. Apply the HEAL prompt: `agent/prompts/heal.md`',
+              '3. Update locators in `.context.md` if needed',
+              '4. Re-run the pipeline to verify the fix',
+              '',
+              '_This issue was created automatically by the GUIDO Agentic Pipeline._'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['auto-heal', 'test-failure']
+            });

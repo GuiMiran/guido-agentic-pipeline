@@ -1,5 +1,5 @@
-using BoDi;
 using GUIDO.Agentic.Tests.Core;
+using BoDi;
 using TechTalk.SpecFlow;
 
 namespace GUIDO.Agentic.Tests.Hooks;
@@ -15,15 +15,16 @@ public class DriverHooks
     }
 
     [BeforeScenario(Order = 0)]
-    public void RegisterDriver()
+    public void BeforeScenario()
     {
-        _container.RegisterInstanceAs(new DriverContext());
+        var context = new WebDriverContext();
+        _container.RegisterInstanceAs<IWebDriverContext>(context);
     }
 
-    [AfterScenario(Order = int.MaxValue)]
-    public void DisposeDriver()
+    [AfterScenario]
+    public void AfterScenario()
     {
-        var ctx = _container.Resolve<DriverContext>();
-        ctx.Dispose();
+        var context = _container.Resolve<IWebDriverContext>();
+        (context as IDisposable)?.Dispose();
     }
 }

@@ -5,63 +5,56 @@ using GUIDO.Agentic.Tests.Core;
 namespace GUIDO.Agentic.Tests.Pages;
 
 /// <summary>
-/// Page Object for https://www.saucedemo.com/cart.html
-/// Locators sourced from specs/cart/cart.context.md
+/// Page Object for the SauceDemo cart page (/cart.html).
+/// All locators are sourced from specs/cart/cart.context.md.
 /// </summary>
-public class CartPage
+public class CartPage : BasePage
 {
-    private readonly IWebDriver _driver;
-    private readonly WebDriverWait _wait;
-    private readonly IJavaScriptExecutor _js;
+    // Locators
+    private static readonly By PageTitle = By.CssSelector(".title");
+    private static readonly By CartItems = By.CssSelector(".cart_item");
+    private static readonly By CheckoutButton = By.Id("checkout");
+    private static readonly By ContinueShoppingButton = By.Id("continue-shopping");
+    private static readonly By RemoveButtons = By.CssSelector(".cart_button");
 
-    public CartPage(IWebDriver driver)
+    public CartPage(IWebDriver driver) : base(driver) { }
+
+    /// <summary>Waits until the cart page has fully loaded.</summary>
+    public CartPage WaitForLoad()
     {
-        _driver = driver;
-        _wait = new WebDriverWait(driver, TimeSpan.FromSeconds(ConfigManager.TimeoutSeconds));
-        _js = (IJavaScriptExecutor)driver;
+        WaitForUrl("cart.html");
+        WaitForElement(PageTitle);
+        return this;
     }
 
-    public void Navigate()
+    /// <summary>Returns the page title text.</summary>
+    public string GetTitle() => WaitForElement(PageTitle).Text;
+
+    /// <summary>Returns all cart item elements.</summary>
+    public IReadOnlyCollection<IWebElement> GetCartItems() =>
+        Driver.FindElements(CartItems);
+
+    /// <summary>Returns the number of items currently in the cart.</summary>
+    public int GetItemCount() => GetCartItems().Count;
+
+    /// <summary>Returns true when the cart contains at least one item.</summary>
+    public bool HasItems() => GetItemCount() > 0;
+
+    /// <summary>Clicks the Checkout button.</summary>
+    public void ClickCheckout() => WaitForClickable(CheckoutButton).Click();
+
+    /// <summary>Clicks the Continue Shopping button.</summary>
+    public void ClickContinueShopping() => WaitForClickable(ContinueShoppingButton).Click();
+
+    /// <summary>Removes the item at the given 0-based index.</summary>
+    public CartPage RemoveItem(int index = 0)
     {
-        _driver.Navigate().GoToUrl($"{ConfigManager.BaseUrl}/cart.html");
-        _wait.Until(d => d.FindElement(By.CssSelector(".cart_list")));
+        var buttons = Driver.FindElements(RemoveButtons);
+        if (index >= buttons.Count)
+            throw new ArgumentOutOfRangeException(nameof(index),
+                $"Only {buttons.Count} remove buttons available.");
+
+        buttons[index].Click();
+        return this;
     }
-
-    public IReadOnlyList<IWebElement> GetCartItems() =>
-        _driver.FindElements(By.CssSelector(".cart_item"));
-
-    public int GetCartItemCount() => GetCartItems().Count;
-
-    public bool IsCartEmpty() =>
-        _wait.Until(d => d.FindElements(By.CssSelector(".cart_item")).Count == 0);
-
-    public bool EachItemHasNameQuantityAndPrice() =>
-        GetCartItems().All(item =>
-            !string.IsNullOrWhiteSpace(item.FindElement(By.CssSelector(".inventory_item_name")).Text) &&
-            !string.IsNullOrWhiteSpace(item.FindElement(By.CssSelector(".cart_quantity")).Text) &&
-            item.FindElement(By.CssSelector(".inventory_item_price")).Text.StartsWith("$"));
-
-    public void RemoveFirstItem()
-    {
-        int countBefore = _driver.FindElements(By.CssSelector(".cart_item")).Count;
-        var btn = _driver.FindElement(By.CssSelector(".cart_item button"));
-        _js.ExecuteScript("arguments[0].click();", btn);
-        _wait.Until(d => d.FindElements(By.CssSelector(".cart_item")).Count < countBefore);
-    }
-
-    public void ClickContinueShopping()
-    {
-        var btn = _driver.FindElement(By.Id("continue-shopping"));
-        _js.ExecuteScript("arguments[0].click();", btn);
-        _wait.Until(d => !d.Url.Contains("cart.html"));
-    }
-
-    public void ClickCheckout()
-    {
-        var btn = _driver.FindElement(By.Id("checkout"));
-        _js.ExecuteScript("arguments[0].click();", btn);
-        _wait.Until(d => !d.Url.Contains("cart.html"));
-    }
-
-    public string GetCurrentUrl() => _driver.Url;
 }
