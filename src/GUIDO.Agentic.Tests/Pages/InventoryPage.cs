@@ -5,66 +5,71 @@ using GUIDO.Agentic.Tests.Core;
 namespace GUIDO.Agentic.Tests.Pages;
 
 /// <summary>
-/// Page Object for the SauceDemo inventory page (/inventory.html).
-/// All locators are sourced from specs/inventory/inventory.context.md.
+/// Page Object for https://www.saucedemo.com/inventory.html
+/// Locators sourced from specs/inventory/inventory.context.md
 /// </summary>
-public class InventoryPage : BasePage
+public class InventoryPage
 {
-    // Locators
-    private static readonly By PageTitle = By.CssSelector(".title");
-    private static readonly By InventoryItems = By.CssSelector(".inventory_item");
-    private static readonly By CartBadge = By.CssSelector(".shopping_cart_badge");
-    private static readonly By CartLink = By.CssSelector(".shopping_cart_link");
-    private static readonly By SortDropdown = By.CssSelector("[data-test='product-sort-container']");
-    private static readonly By BurgerMenu = By.Id("react-burger-menu-btn");
-    private static readonly By LogoutLink = By.Id("logout_sidebar_link");
+    private readonly IWebDriver _driver;
+    private readonly WebDriverWait _wait;
 
-    public InventoryPage(IWebDriver driver) : base(driver) { }
-
-    /// <summary>Waits until the inventory page has fully loaded.</summary>
-    public InventoryPage WaitForLoad()
+    public InventoryPage(IWebDriver driver)
     {
-        WaitForUrl("inventory.html");
-        WaitForElement(PageTitle);
-        return this;
+        _driver = driver;
+        _wait = new WebDriverWait(driver, TimeSpan.FromSeconds(ConfigManager.TimeoutSeconds));
     }
 
-    /// <summary>Returns the page title text.</summary>
-    public string GetTitle() => WaitForElement(PageTitle).Text;
+    public IReadOnlyList<IWebElement> GetProducts() =>
+        _wait.Until(d => d.FindElements(By.CssSelector(".inventory_item")));
 
-    /// <summary>Returns all inventory item elements.</summary>
-    public IReadOnlyCollection<IWebElement> GetItems() =>
-        Driver.FindElements(InventoryItems);
+    public IReadOnlyList<string> GetProductNames() =>
+        GetProducts()
+            .Select(p => p.FindElement(By.CssSelector(".inventory_item_name")).Text)
+            .ToList();
 
-    /// <summary>Returns the number of products displayed.</summary>
-    public int GetItemCount() => GetItems().Count;
+    public IReadOnlyList<decimal> GetProductPrices() =>
+        GetProducts()
+            .Select(p => decimal.Parse(
+                p.FindElement(By.CssSelector(".inventory_item_price")).Text.Replace("$", "")))
+            .ToList();
 
-    /// <summary>Returns the cart badge count, or 0 if the badge is not visible.</summary>
-    public int GetCartBadgeCount()
+    public void SortBy(string label)
     {
-        if (!ElementExists(CartBadge)) return 0;
-        return int.TryParse(Driver.FindElement(CartBadge).Text, out var count) ? count : 0;
+        var select = new SelectElement(_driver.FindElement(By.CssSelector(".product_sort_container")));
+        select.SelectByText(label);
     }
 
-    /// <summary>Clicks "Add to cart" for the item at the given 0-based index.</summary>
-    public InventoryPage AddItemToCart(int index = 0)
+    public void AddFirstProductToCart()
     {
-        var addButtons = Driver.FindElements(By.CssSelector(".btn_inventory"));
-        if (index >= addButtons.Count)
-            throw new ArgumentOutOfRangeException(nameof(index),
-                $"Only {addButtons.Count} items available.");
-
-        addButtons[index].Click();
-        return this;
+        var buttons = _driver.FindElements(By.CssSelector(".btn_inventory"));
+        buttons.First(b => b.Text == "Add to cart").Click();
     }
 
-    /// <summary>Clicks the shopping cart icon to navigate to the cart.</summary>
-    public void GoToCart() => WaitForClickable(CartLink).Click();
-
-    /// <summary>Logs out via the burger menu.</summary>
-    public void Logout()
+    public void RemoveFirstProductFromCart()
     {
-        WaitForClickable(BurgerMenu).Click();
-        WaitForClickable(LogoutLink).Click();
+        int countBefore = _driver.FindElements(By.CssSelector(".shopping_cart_badge")).Count;
+        _driver.FindElement(By.CssSelector(".btn_secondary.btn_inventory")).Click();
+        _wait.Until(d => d.FindElements(By.CssSelector(".shopping_cart_badge")).Count < countBefore);
     }
+
+    public string GetCartBadgeText() =>
+        _driver.FindElement(By.CssSelector(".shopping_cart_badge")).Text;
+
+    public bool IsCartBadgeVisible()
+    {
+        try
+        {
+            return _driver.FindElement(By.CssSelector(".shopping_cart_badge")).Displayed;
+        }
+        catch (NoSuchElementException)
+        {
+            return false;
+        }
+    }
+
+    public bool EachProductHasNamePriceAndButton() =>
+        GetProducts().All(p =>
+            !string.IsNullOrWhiteSpace(p.FindElement(By.CssSelector(".inventory_item_name")).Text) &&
+            p.FindElement(By.CssSelector(".inventory_item_price")).Text.StartsWith("$") &&
+            p.FindElements(By.CssSelector(".btn_inventory")).Count > 0);
 }
