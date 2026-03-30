@@ -4,10 +4,6 @@ using TechTalk.SpecFlow;
 
 namespace GUIDO.Agentic.Tests.Hooks;
 
-/// <summary>
-/// SpecFlow hooks for scenario setup and teardown.
-/// Registers and disposes the <see cref="WebDriverContext"/> for each scenario.
-/// </summary>
 [Binding]
 public class DriverHooks
 {

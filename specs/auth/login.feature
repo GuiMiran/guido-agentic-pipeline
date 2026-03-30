@@ -1,27 +1,37 @@
-# Feature: Login — SauceDemo Authentication
-# Context: specs/auth/login.context.md
-# Data: specs/auth/login.data.json
-
 Feature: Login
-  As a registered user
-  I want to log into SauceDemo
-  So that I can access the product catalogue
+  As a registered SauceDemo user
+  I want to authenticate with valid credentials
+  So that I can access the product inventory
 
   Background:
-    Given I navigate to "https://www.saucedemo.com"
+    Given I am on the SauceDemo login page
 
-  Scenario: Successful login — standard user
-    When I log in with username "standard_user" and password "secret_sauce"
-    Then I should land on the inventory page
+  @smoke @auth
+  Scenario: Successful login with standard user
+    When I enter username "standard_user" and password "secret_sauce"
+    And I click the login button
+    Then I should be redirected to the inventory page
+    And the page title should be "Products"
 
-  Scenario: Rejected login — locked-out user
-    When I log in with username "locked_out_user" and password "secret_sauce"
-    Then I should see a login error containing "locked out"
+  @auth @negative
+  Scenario: Login with locked-out user is rejected
+    When I enter username "locked_out_user" and password "secret_sauce"
+    And I click the login button
+    Then I should see an error message containing "locked out"
 
-  Scenario: Rejected login — invalid credentials
-    When I log in with username "bad_user" and password "bad_pass"
-    Then I should see a login error containing "Username and password do not match"
+  @auth @negative
+  Scenario: Login with invalid credentials shows error
+    When I enter username "invalid_user" and password "wrong_password"
+    And I click the login button
+    Then I should see an error message containing "Username and password do not match"
 
-  Scenario: Required field — empty username
-    When I click Login without entering credentials
-    Then I should see a login error containing "Username is required"
+  @auth @negative
+  Scenario: Login without credentials shows required field error
+    When I click the login button
+    Then I should see an error message containing "Username is required"
+
+  @auth @negative
+  Scenario: Login with username only shows password required error
+    When I enter username "standard_user" and password ""
+    And I click the login button
+    Then I should see an error message containing "Password is required"
