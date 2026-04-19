@@ -19,8 +19,7 @@ public class InventoryPage
         _wait = new WebDriverWait(driver, TimeSpan.FromSeconds(ConfigManager.TimeoutSeconds));
     }
 
-    /// <summary>Waits until the inventory page has fully loaded.</summary>
-    public InventoryPage WaitForLoad()
+    public InventoryPage(IWebDriver driver)
     {
         _wait.Until(d => d.Url.Contains("inventory.html"));
         _wait.Until(d => d.FindElement(By.CssSelector(".title")));
