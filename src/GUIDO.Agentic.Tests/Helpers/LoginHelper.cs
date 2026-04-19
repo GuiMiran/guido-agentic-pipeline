@@ -9,7 +9,7 @@ public static class LoginHelper
     public static void LoginAsStandardUser(IWebDriver driver)
     {
         var page = new LoginPage(driver);
-        page.Navigate();
+        page.Open();
         page.EnterUsername(ConfigManager.StandardUser);
         page.EnterPassword(ConfigManager.Password);
         page.ClickLogin();
