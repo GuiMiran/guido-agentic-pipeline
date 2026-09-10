@@ -24,7 +24,13 @@ public class DriverHooks
     [AfterScenario]
     public void AfterScenario()
     {
-        var context = _container.Resolve<IWebDriverContext>();
-        (context as IDisposable)?.Dispose();
+        try
+        {
+            var context = _container.Resolve<IWebDriverContext>();
+            (context as IDisposable)?.Dispose();
+        }
+        catch (ObjectContainerException)
+        {
+        }
     }
 }

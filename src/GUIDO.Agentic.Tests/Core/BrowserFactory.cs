@@ -1,14 +1,12 @@
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
-using WebDriverManager;
-using WebDriverManager.DriverConfigs.Impl;
 
 namespace GUIDO.Agentic.Tests.Core;
 
 /// <summary>
 /// Factory responsible for creating and configuring Selenium WebDriver instances.
-/// Uses WebDriverManager for automatic driver binary management.
+/// Uses Selenium's built-in driver management when creating browser drivers.
 /// </summary>
 public static class BrowserFactory
 {
@@ -27,8 +25,6 @@ public static class BrowserFactory
 
     private static IWebDriver CreateChrome()
     {
-        new DriverManager().SetUpDriver(new ChromeConfig());
-
         var options = new ChromeOptions();
 
         if (ConfigManager.Headless)
@@ -40,13 +36,14 @@ public static class BrowserFactory
             options.AddArgument("--window-size=1920,1080");
         }
 
-        return new ChromeDriver(options);
+        var service = ResolveChromeDriverService();
+        return service == null
+            ? new ChromeDriver(options)
+            : new ChromeDriver(service, options);
     }
 
     private static IWebDriver CreateFirefox()
     {
-        new DriverManager().SetUpDriver(new FirefoxConfig());
-
         var options = new FirefoxOptions();
 
         if (ConfigManager.Headless)
@@ -57,5 +54,34 @@ public static class BrowserFactory
         }
 
         return new FirefoxDriver(options);
+    }
+
+    private static ChromeDriverService? ResolveChromeDriverService()
+    {
+        var path = FindOnPath("chromedriver", "chromedriver.exe");
+        return path == null
+            ? null
+            : ChromeDriverService.CreateDefaultService(
+                Path.GetDirectoryName(path)!,
+                Path.GetFileName(path));
+    }
+
+    private static string? FindOnPath(params string[] fileNames)
+    {
+        var pathValue = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(pathValue))
+            return null;
+
+        foreach (var directory in pathValue.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            foreach (var fileName in fileNames)
+            {
+                var candidate = Path.Combine(directory, fileName);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+        }
+
+        return null;
     }
 }

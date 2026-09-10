@@ -13,9 +13,9 @@ public class InventorySteps
     private readonly IWebDriver _driver;
     private readonly InventoryPage _inventoryPage;
 
-    public InventorySteps(DriverContext ctx)
+    public InventorySteps(IWebDriverContext context)
     {
-        _driver = ctx.Driver;
+        _driver = context.Driver;
         _inventoryPage = new InventoryPage(_driver);
     }
 

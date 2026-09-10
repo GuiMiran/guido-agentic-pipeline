@@ -13,9 +13,9 @@ public class CartSteps
     private readonly InventoryPage _inventoryPage;
     private readonly CartPage _cartPage;
 
-    public CartSteps(DriverContext ctx)
+    public CartSteps(IWebDriverContext context)
     {
-        _driver = ctx.Driver;
+        _driver = context.Driver;
         _inventoryPage = new InventoryPage(_driver);
         _cartPage = new CartPage(_driver);
     }
