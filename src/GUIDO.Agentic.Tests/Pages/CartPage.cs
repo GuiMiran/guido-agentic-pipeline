@@ -16,11 +16,16 @@ public class CartPage : BasePage
     private static readonly By ItemName = By.CssSelector(".inventory_item_name");
     private static readonly By ItemQuantity = By.CssSelector(".cart_quantity");
     private static readonly By ItemPrice = By.CssSelector(".inventory_item_price");
-    private static readonly By CheckoutButton = By.Id("checkout");
-    private static readonly By ContinueShoppingButton = By.Id("continue-shopping");
+    private static readonly By CheckoutButton = By.CssSelector("[data-test='checkout']");
+    private static readonly By ContinueShoppingButton = By.CssSelector("[data-test='continue-shopping']");
     private static readonly By RemoveButtons = By.CssSelector(".cart_button");
 
-    public CartPage(IWebDriver driver) : base(driver) { }
+    private readonly IJavaScriptExecutor _js;
+
+    public CartPage(IWebDriver driver) : base(driver)
+    {
+        _js = (IJavaScriptExecutor)driver;
+    }
 
     /// <summary>Navigates to the cart page and waits until it has loaded.</summary>
     public CartPage Navigate()
@@ -64,21 +69,33 @@ public class CartPage : BasePage
             item.FindElement(ItemPrice).Text.StartsWith("$", StringComparison.Ordinal));
 
     /// <summary>Clicks the Checkout button.</summary>
-    public void ClickCheckout() => WaitForClickable(CheckoutButton).Click();
+    public void ClickCheckout()
+    {
+        _js.ExecuteScript("arguments[0].click();", WaitForClickable(CheckoutButton));
+        WaitForUrl("checkout-step-one");
+    }
 
     /// <summary>Clicks the Continue Shopping button.</summary>
-    public void ClickContinueShopping() => WaitForClickable(ContinueShoppingButton).Click();
+    public void ClickContinueShopping()
+    {
+        _js.ExecuteScript("arguments[0].click();", WaitForClickable(ContinueShoppingButton));
+        WaitForUrl("inventory");
+    }
 
     /// <summary>Removes the item at the given 0-based index.</summary>
     public CartPage RemoveItem(int index = 0)
     {
         var countBefore = GetItemCount();
-        var buttons = Driver.FindElements(RemoveButtons);
+        var buttons = Wait.Until(d =>
+        {
+            var availableButtons = d.FindElements(RemoveButtons);
+            return availableButtons.Count > 0 ? availableButtons : null;
+        })!;
         if (index >= buttons.Count)
             throw new ArgumentOutOfRangeException(nameof(index),
                 $"Only {buttons.Count} remove buttons available.");
 
-        buttons[index].Click();
+        _js.ExecuteScript("arguments[0].click();", buttons[index]);
         Wait.Until(d => d.FindElements(CartItems).Count < countBefore);
         return this;
     }
