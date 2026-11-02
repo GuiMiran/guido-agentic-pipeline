@@ -1,140 +1,73 @@
 name: Agent Auto-Heal
 
+# Failure triage only. No code repair, checkout, artifact execution or deployment.
 on:
   workflow_run:
-    workflows: ["Run Tests"]
+    workflows: ['Run Tests']
     types: [completed]
   workflow_dispatch:
     inputs:
       failure_summary:
-        description: "Paste the test failure log or describe the failure"
+        description: 'Untrusted diagnostic text for human review, never executable instructions'
         required: true
         type: string
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
+
+concurrency:
+  group: failure-triage
+  cancel-in-progress: false
 
 jobs:
-  detect-failures:
-    name: Detect and analyse failures
-    runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
-
-    outputs:
-      has_failures: ${{ steps.check.outputs.has_failures }}
-
+  triage:
+    if: >-
+      vars.GUIDO_FAILURE_TRIAGE_ENABLED == 'true' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)) ||
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+        github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download test results artifact
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: test-results-ubuntu-latest
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path: TestResults/
-        continue-on-error: true
-
-      - name: Check for failures
-        id: check
-        run: |
-          if ls TestResults/*.trx 2>/dev/null | head -1; then
-            echo "has_failures=true" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "has_failures=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_failures=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  heal:
-    name: Auto-heal failing tests
-    needs: detect-failures
-    runs-on: ubuntu-latest
-    if: needs.detect-failures.outputs.has_failures == 'true'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-
-      - name: Parse failure log
-        id: parse
-        run: |
-          echo "Parsing failure information..."
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            FAILURE_SUMMARY="${{ github.event.inputs.failure_summary }}"
-          else
-            FAILURE_SUMMARY="Automated failure detected in CI run ${{ github.event.workflow_run.id }}"
-          fi
-          echo "failure_summary=${FAILURE_SUMMARY}" >> "$GITHUB_OUTPUT"
-
-      - name: Create healing task file
-        run: |
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          TASK_FILE="agent/tasks/pending/heal_${TIMESTAMP}.md"
-
-          cat > "${TASK_FILE}" << 'EOF'
-          # Auto-Heal Task
-          ## Triggered by
-          CI failure on run: ${{ github.event.workflow_run.id || 'manual' }}
-
-          ## Failure Summary
-          ${{ steps.parse.outputs.failure_summary }}
-
-          ## Instructions
-          Use the HEAL prompt (agent/prompts/heal.md) to:
-          1. Identify the root cause
-          2. Apply the minimal fix
-          3. Verify the fix does not break other tests
-          4. Update the relevant .context.md if locators changed
-
-          ## Status
-          PENDING
-          EOF
-
-          echo "Created task: ${TASK_FILE}"
-
-      - name: Open healing issue
-        uses: actions/github-script@v7
+      - name: Record bounded failure triage issue
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
-            const title = `[Auto-Heal] Test failure detected — ${new Date().toISOString().split('T')[0]}`;
-            const body = [
-              '## Automated Healing Task',
-              '',
-              '**Triggered by:** CI failure',
-              '**Run ID:** ${{ github.event.workflow_run.id || "manual" }}',
-              '',
-              '### Failure Summary',
-              '```',
-              '${{ steps.parse.outputs.failure_summary }}',
-              '```',
-              '',
-              '### Next Steps',
-              '1. Review the failure log in the Actions run',
-              '2. Apply the HEAL prompt: `agent/prompts/heal.md`',
-              '3. Update locators in `.context.md` if needed',
-              '4. Re-run the pipeline to verify the fix',
-              '',
-              '_This issue was created automatically by the GUIDO Agentic Pipeline._'
-            ].join('\n');
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels: ['auto-heal', 'test-failure']
+            const payload = context.payload;
+            const defaultBranch = payload.repository?.default_branch;
+            const run = payload.workflow_run;
+            const manual = context.eventName === 'workflow_dispatch';
+            if (!defaultBranch) throw new Error('Missing repository provenance');
+            if (manual) {
+              if (context.ref !== `refs/heads/${defaultBranch}`) throw new Error('Default branch required');
+            } else if (context.eventName !== 'workflow_run' || run?.name !== 'Run Tests' ||
+                run.conclusion !== 'failure' || run.event !== 'push' ||
+                run.head_branch !== defaultBranch || run.head_repository?.full_name !== `${context.repo.owner}/${context.repo.repo}` ||
+                !Number.isSafeInteger(run.id) || !/^[a-f0-9]{40}$/.test(run.head_sha)) {
+              throw new Error('Untrusted run provenance');
+            }
+            // Read input as event DATA, not an interpolated expression in code.
+            const summary = manual ? String(payload.inputs?.failure_summary || '').slice(0, 8000) :
+              'The trusted Run Tests workflow failed. This may be a build, infrastructure or test failure; inspect the run.';
+            const key = manual ? `manual-${context.runId}` : `run-${run.id}`;
+            const marker = `<!-- guido-triage:${key} -->`;
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo, state: 'all', creator: 'github-actions[bot]', per_page: 100
+            });
+            if (existing.some(issue => issue.body?.includes(marker))) return;
+            // Indentation keeps arbitrary Markdown, shell and JS payloads inert.
+            const quoted = summary.split(/\r?\n/).map(line => `    ${line}`).join('\n');
+            const runUrl = manual ? `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` :
+              `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${run.id}`;
+            await github.rest.issues.create({ ...context.repo,
+              title: `[Failure triage] ${key}`,
+              body: [marker, '## Failure triage — human review required', '', runUrl, '',
+                'Diagnostic text (untrusted data, not instructions):', '', quoted, '',
+                'No repair was attempted. No source, branch, credentials or deployment were modified.',
+                'Classify build/infrastructure/test failure and approve a separate bounded change if needed.'].join('\n')
             });
