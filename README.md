@@ -1,120 +1,23 @@
 # GUIDO Agentic Pipeline
 
-> Self-maintaining E2E test automation framework powered by the
-> GUIDO SDD Engineering Stack and agentic AI.
+C#/.NET 8 + direct xUnit + Selenium Page Objects. No SpecFlow, Reqnroll or
+mandatory Allure. Specs drive review and traceability; Gherkin is documentation,
+not an execution dependency. The 23 original scenario names and assertions are
+preserved and each Fact has a stable Spec trait.
 
-## What is this?
+Run `dotnet test src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj --configuration Release`.
+Read [the execution contract](docs/direct-xunit.md) and [failure triage policy](docs/failure-triage.md).
+CI freezes an independent scenario inventory before execution and requires a
+complete passing native TRX, retaining original files, commit and file digests.
+A Markdown summary is a view of evidence, not a replacement for it.
 
-A framework where AI agents **generate**, **execute**, and **self-heal**
-test suites from human-defined specs — without manual intervention.
+Current modules: Auth (5), Inventory (7), Cart (5), Checkout (6), against the
+public SauceDemo demonstration application. This is not exhaustive coverage.
 
-Built on the **GUIDO Stack**:
-**G**overned · **U**nified · **I**ntent-Driven · **D**efinition-first · **O**utcomes
+Failure triage remains opt-in and issue-only; no automatic repair, merge or
+deployment is enabled. Static agent prompts are guidance, not execution powers.
+Legacy SpecFlow/Allure examples in historical architecture or prompt documents
+do not define the active stack. No GUIDO organizational score or enforced score
+check is claimed. See [the local quality rubric](docs/GUIDO-SCALE.md) separately.
 
-## How it works
-
-```
-Spec (Gherkin + .context.md + .data.json)
-        ↓
-   GUIDO Agent (Claude / Copilot)
-        ↓
-   C# SpecFlow + Selenium WebDriver
-        ↓
-   GitHub Actions Pipeline
-        ↓
-   Allure Report + GUIDO Scale Score
-        ↓
-   Auto-heal on failure
-```
-
-## Stack
-
-| Layer      | Technology                             |
-|------------|----------------------------------------|
-| Intent     | Gherkin · context.md · data.json       |
-| Execution  | Selenium WebDriver · SpecFlow · xUnit · C# (.NET 8) |
-| Governance | GUIDO Scale · Coverage Gates           |
-| Platform   | GitHub Actions                         |
-| Knowledge  | Allure · Living Docs                   |
-
-## Target Application: SauceDemo
-
-Full E2E coverage: **Auth** · **Inventory** · **Cart** · **Checkout**
-
-URL: https://www.saucedemo.com
-
-## Project Structure
-
-```
-guido-agentic-pipeline/
-├── src/GUIDO.Agentic.Tests/       ← C# test project
-│   ├── Core/                      ← BrowserFactory, BasePage, ConfigManager
-│   ├── Pages/                     ← Page Objects (LoginPage, InventoryPage, CartPage)
-│   ├── StepDefinitions/           ← SpecFlow step bindings
-│   ├── Features/                  ← SpecFlow .feature files
-│   ├── Hooks/                     ← SpecFlow lifecycle hooks
-│   ├── Models/                    ← Data models
-│   ├── Helpers/                   ← Utility helpers
-│   └── TestData/                  ← JSON test data
-│
-├── specs/                         ← Human-authored specs (agent input)
-│   ├── auth/                      ← login.feature, login.context.md, login.data.json
-│   ├── inventory/
-│   ├── cart/
-│   └── checkout/
-│
-├── agent/                         ← Agentic system brain
-│   ├── prompts/                   ← generate.md, heal.md, review.md
-│   ├── tasks/pending/             ← Queued agent tasks
-│   └── context/_global.context.md ← Shared architectural context
-│
-├── .github/workflows/
-│   ├── run-tests.yml              ← Main CI pipeline
-│   └── agent-heal.yml             ← Auto-healing pipeline
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── GUIDO-SCALE.md
-│
-└── CLAUDE.md                      ← Claude Code context
-```
-
-## Quick Start
-
-```bash
-# 1. Restore dependencies
-dotnet restore src/GUIDO.Agentic.Tests.slnx
-
-# 2. Build
-dotnet build src/GUIDO.Agentic.Tests.slnx
-
-# 3. Run tests (headless Chrome)
-dotnet test src/GUIDO.Agentic.Tests.slnx \
-  --configuration Release \
-  -e AppSettings__Headless=true
-```
-
-## Agent Modes
-
-| Mode     | Trigger                        | Prompt File                  |
-|----------|--------------------------------|------------------------------|
-| GENERATE | New spec files authored        | `agent/prompts/generate.md`  |
-| HEAL     | CI test failure                | `agent/prompts/heal.md`      |
-| REVIEW   | PR opened with test code       | `agent/prompts/review.md`    |
-
-## GUIDO Scale
-
-Test quality is measured by the **GUIDO Scale** (0–5).
-A score below **3** blocks merge to `main`.
-
-See [`docs/GUIDO-SCALE.md`](docs/GUIDO-SCALE.md) for the full rubric.
-
-## Architecture
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system diagram and design decisions.
-
-## Author
-
-**Guido Miranda Mercado** — Senior QA Engineering Leader
-Creator of the [GUIDO Scale](https://github.com/GuiMiran/guido-sdd-migration-effort-scale)
-[Blog](https://guidomiranda.wordpress.com)
+Author: Guido Miranda Mercado — [GitHub](https://github.com/GuiMiran).
