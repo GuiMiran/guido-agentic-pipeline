@@ -1,90 +1,49 @@
 name: Run Tests
-
 on:
   push:
-    branches: [main, "feature/**", "copilot/**"]
+    branches: [main, 'feature/**', 'copilot/**', fix/allure-evidence-gate]
   pull_request:
     branches: [main]
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   test:
-    name: E2E Tests — ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-
-    permissions:
-      contents: read
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ALLURE_CONFIG: ${{ runner.temp }}/allureConfig.json
+      ALLURE_RESULTS_DIR: ${{ runner.temp }}/pipeline-evidence/allure
+      TRX_RESULTS_DIR: ${{ runner.temp }}/pipeline-evidence/trx
+      EXPECTED_INVENTORY: ${{ runner.temp }}/pipeline-evidence/expected.json
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          dotnet-version: "8.0.x"
-
-      - name: Install Google Chrome (Linux)
-        if: runner.os == 'Linux'
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - name: Evidence gate negative controls
+        run: python3 -m unittest discover -s test -p 'test_evidence_gate.py' -v
+      - name: Freeze expected scenarios before execution
         run: |
-          wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
-            | sudo tee /etc/apt/trusted.gpg.d/google-chrome.asc > /dev/null
-          echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/google-chrome.asc] http://dl.google.com/linux/chrome/deb/ stable main" \
-            | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update -q
-          sudo apt-get install -y google-chrome-stable
-
-      - name: Restore NuGet packages
-        run: dotnet restore src/GUIDO.Agentic.Tests.slnx
-
-      - name: Build solution
-        run: dotnet build src/GUIDO.Agentic.Tests.slnx --no-restore --configuration Release
-
-      - name: Run tests
-        run: |
-          dotnet test src/GUIDO.Agentic.Tests.slnx \
-            --no-build \
-            --configuration Release \
-            --logger "trx;LogFileName=test-results.trx" \
-            --results-directory TestResults
-        env:
-          AppSettings__Browser: chrome
-          AppSettings__Headless: "true"
-          AppSettings__BaseUrl: "https://www.saucedemo.com"
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
+          python3 scripts/evidence_gate.py inventory --inventory "$EXPECTED_INVENTORY"
+          python3 -c 'import json,os; from pathlib import Path; Path(os.environ["ALLURE_CONFIG"]).write_text(json.dumps({"allure":{"directory":os.environ["ALLURE_RESULTS_DIR"]}}))'
+      - name: Restore
+        run: dotnet restore src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj
+      - name: Build
+        id: build
+        run: dotnet build src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj --no-restore --configuration Release
+      - name: Run all scenarios
+        run: dotnet test src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj --no-build --no-restore --configuration Release --logger 'trx;LogFileName=tests.trx' --results-directory "$TRX_RESULTS_DIR"
+      - name: Require complete matching passing evidence
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 scripts/evidence_gate.py check --inventory "$EXPECTED_INVENTORY" --allure "$ALLURE_RESULTS_DIR" --trx "$TRX_RESULTS_DIR"
+      - name: Preserve native evidence including failures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: test-results-${{ matrix.os }}
-          path: TestResults/
-
-      - name: Upload Allure results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: allure-results-${{ matrix.os }}
-          path: allure-results/
-          if-no-files-found: ignore
-
-      - name: Generate Allure report
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        with:
-          allure_results: allure-results
-          allure_report: allure-report
-          gh_pages: gh-pages
-          allure_history: allure-history
-
-      - name: Upload Allure report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: allure-report-${{ matrix.os }}
-          path: allure-report/
-          if-no-files-found: ignore
+          name: pipeline-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pipeline-evidence/
+          if-no-files-found: error
+          retention-days: 30

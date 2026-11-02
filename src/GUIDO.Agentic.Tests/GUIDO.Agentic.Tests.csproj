@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Allure.SpecFlow" Version="2.15.0" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
@@ -28,6 +29,7 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="specflow.json"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
     <None Update="allureConfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
