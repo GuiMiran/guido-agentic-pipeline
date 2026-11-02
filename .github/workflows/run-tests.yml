@@ -11,11 +11,6 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      ALLURE_CONFIG: ${{ runner.temp }}/allureConfig.json
-      ALLURE_RESULTS_DIR: ${{ runner.temp }}/pipeline-evidence/allure
-      TRX_RESULTS_DIR: ${{ runner.temp }}/pipeline-evidence/trx
-      EXPECTED_INVENTORY: ${{ runner.temp }}/pipeline-evidence/expected.json
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -27,6 +22,11 @@ jobs:
         run: python3 -m unittest discover -s test -p 'test_evidence_gate.py' -v
       - name: Freeze expected scenarios before execution
         run: |
+          export ALLURE_CONFIG="$RUNNER_TEMP/pipeline-evidence/allureConfig.json"
+          export ALLURE_RESULTS_DIR="$RUNNER_TEMP/pipeline-evidence/allure"
+          export TRX_RESULTS_DIR="$RUNNER_TEMP/pipeline-evidence/trx"
+          export EXPECTED_INVENTORY="$RUNNER_TEMP/pipeline-evidence/expected.json"
+          printf 'ALLURE_CONFIG=%s\nALLURE_RESULTS_DIR=%s\nTRX_RESULTS_DIR=%s\nEXPECTED_INVENTORY=%s\n' "$ALLURE_CONFIG" "$ALLURE_RESULTS_DIR" "$TRX_RESULTS_DIR" "$EXPECTED_INVENTORY" >> "$GITHUB_ENV"
           python3 scripts/evidence_gate.py inventory --inventory "$EXPECTED_INVENTORY"
           python3 -c 'import json,os; from pathlib import Path; Path(os.environ["ALLURE_CONFIG"]).write_text(json.dumps({"allure":{"directory":os.environ["ALLURE_RESULTS_DIR"]}}))'
       - name: Restore
