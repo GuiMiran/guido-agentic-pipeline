@@ -31,12 +31,12 @@ class MappingTests(unittest.TestCase):
 
     def test_complete_declared_links_keep_unassessed_obligations_separate(self):
         expected, coverage = build_mapping(self.root, COMMIT)
-        self.assertEqual(len(expected['tests']), 23)
+        self.assertEqual(len(expected['tests']), 27)
         self.assertEqual(expected['tests'][0]['id'], 'AC-001')
         self.assertEqual(expected['tests'][0]['pipelineTestId'], 'AUTH-001')
         self.assertEqual(coverage['declaredCriteria'], 28)
-        self.assertEqual(coverage['linkedCriteria'], 23)
-        self.assertEqual(coverage['unassessedCriteria'], [f'AC-{i:03}' for i in range(24, 29)])
+        self.assertEqual(coverage['linkedCriteria'], 27)
+        self.assertEqual(coverage['unassessedCriteria'], ['AC-025'])
         self.assertIsNone(coverage['behaviourallyVerified'])
         self.assertEqual((expected, coverage), build_mapping(self.root, COMMIT))
         self.assertTrue(any(item['file'] == REQUIREMENTS for item in expected['mapping']['files']))
@@ -44,7 +44,7 @@ class MappingTests(unittest.TestCase):
     def test_deleted_or_duplicate_mappings_are_rejected(self):
         original = self.manifest()
         for rows in [original['mappings'][:-1], original['mappings'] + [original['mappings'][0]],
-                     [original['mappings'][0]] * 23]:
+                     [original['mappings'][0]] * 27]:
             with self.subTest(rows=len(rows)):
                 modified = copy.deepcopy(original)
                 modified['mappings'] = rows
@@ -103,6 +103,16 @@ class MappingTests(unittest.TestCase):
         self.write_manifest(changed)
         with self.assertRaises(ValueError):
             build_mapping(self.root, COMMIT)
+
+    def test_new_obligation_methods_and_files_are_required(self):
+        for file_name in ['InventoryObligationTests.cs', 'CartObligationTests.cs',
+                          'CheckoutObligationTests.cs', 'UnauthorizedInventoryTests.cs']:
+            file = self.root / 'src/GUIDO.Agentic.Tests/Tests' / file_name
+            original = file.read_text()
+            file.write_text('')
+            with self.subTest(file=file_name), self.assertRaises(ValueError):
+                build_mapping(self.root, COMMIT)
+            file.write_text(original)
 
     def test_helper_bytes_change_digest_without_becoming_proof(self):
         _, before = build_mapping(self.root, COMMIT)

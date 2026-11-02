@@ -1,3 +1,4 @@
+using System.Globalization;
 using OpenQA.Selenium;
 using GUIDO.Agentic.Tests.Core;
 
@@ -19,6 +20,8 @@ public class CheckoutPage : BasePage
 
     // Locators — Step 2 (Overview)
     private static readonly By OverviewItems     = By.CssSelector(".cart_item");
+    private static readonly By OverviewItemName  = By.CssSelector(".inventory_item_name");
+    private static readonly By OverviewItemPrice = By.CssSelector(".inventory_item_price");
     private static readonly By SubtotalLabel     = By.CssSelector(".summary_subtotal_label");
     private static readonly By TaxLabel          = By.CssSelector(".summary_tax_label");
     private static readonly By TotalLabel        = By.CssSelector(".summary_total_label");
@@ -107,6 +110,21 @@ public class CheckoutPage : BasePage
     /// <summary>Returns all order overview items.</summary>
     public IReadOnlyCollection<IWebElement> GetOverviewItems() =>
         Driver.FindElements(OverviewItems);
+
+    /// <summary>Waits for checkout step two and its documented overview items.</summary>
+    public CheckoutPage WaitForOverview()
+    {
+        WaitForUrl("checkout-step-two");
+        WaitForElement(OverviewItems);
+        return this;
+    }
+
+    /// <summary>Reads names and prices from the documented overview item selectors.</summary>
+    public IReadOnlyList<(string Name, decimal Price)> GetOverviewProducts() =>
+        GetOverviewItems().Select(item => (
+            item.FindElement(OverviewItemName).Text,
+            decimal.Parse(item.FindElement(OverviewItemPrice).Text.Replace("$", ""),
+                NumberStyles.Number, CultureInfo.InvariantCulture))).ToList();
 
     /// <summary>Returns true when at least one item is shown in the overview.</summary>
     public bool HasOverviewItems() => GetOverviewItems().Count > 0;

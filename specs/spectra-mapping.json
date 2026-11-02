@@ -162,6 +162,34 @@
       "acceptanceId": "AC-023",
       "scenarioFile": "specs/checkout/checkout.feature",
       "method": "CheckoutTests.BackHome"
+    },
+    {
+      "testId": "INVENTORY-008",
+      "name": "Standard user inventory contains exactly six products",
+      "acceptanceId": "AC-024",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryObligationTests.ExactProductCount"
+    },
+    {
+      "testId": "CART-006",
+      "name": "Removing the only cart item hides the cart badge",
+      "acceptanceId": "AC-026",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartObligationTests.RemovingOnlyItemClearsBadge"
+    },
+    {
+      "testId": "AUTH-006",
+      "name": "Unauthenticated inventory access returns to login",
+      "acceptanceId": "AC-027",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "UnauthorizedInventoryTests.DeniesUnauthenticatedInventory"
+    },
+    {
+      "testId": "CHECKOUT-007",
+      "name": "Checkout overview preserves the added product identity",
+      "acceptanceId": "AC-028",
+      "scenarioFile": "specs/checkout/overview-identity.feature",
+      "method": "CheckoutObligationTests.OverviewPreservesProductIdentity"
     }
   ]
 }
