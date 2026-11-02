@@ -26,21 +26,7 @@ public class CartSteps
 
     [Given(@"I add (\d+) products to the cart from inventory")]
     public void GivenIAddNProductsToCartFromInventory(int count)
-    {
-        var wait = new OpenQA.Selenium.Support.UI.WebDriverWait(_driver,
-            TimeSpan.FromSeconds(ConfigManager.TimeoutSeconds));
-
-        for (int i = 0; i < count; i++)
-        {
-            var button = wait.Until(d =>
-                d.FindElements(By.CssSelector(".btn_inventory"))
-                 .FirstOrDefault(b => b.Text == "Add to cart"));
-            button!.Click();
-            // wait for badge to reflect the click before next iteration
-            var expected = (i + 1).ToString();
-            wait.Until(d => d.FindElement(By.CssSelector(".shopping_cart_badge")).Text == expected);
-        }
-    }
+        => _inventoryPage.AddProductsToCart(count);
 
     [When(@"I navigate to the cart page")]
     public void WhenINavigateToCartPage() => _cartPage.Navigate();
