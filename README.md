@@ -11,6 +11,11 @@ CI freezes an independent scenario inventory before execution and requires a
 complete passing native TRX, retaining original files, commit and file digests.
 A Markdown summary is a view of evidence, not a replacement for it.
 
+[SPECTRA acceptance mapping](docs/spectra-acceptance-mapping.md) declares links
+from those 23 scenarios to AC IDs and preserves five known unassessed obligations.
+CI freezes the canonical inventory and separate structural ledger before tests.
+Static links and a green execution are not full functional coverage.
+
 Current modules: Auth (5), Inventory (7), Cart (5), Checkout (6), against the
 public SauceDemo demonstration application. This is not exhaustive coverage.
 

@@ -19,13 +19,14 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Negative evidence controls
-        run: python3 -m unittest discover -s test -p 'test_trx_gate.py' -v
+        run: python3 -m unittest discover -s test -p 'test_*.py' -v
       - name: Freeze independent inventory
         run: |
           export EXPECTED_INVENTORY="$RUNNER_TEMP/pipeline-evidence/expected.json"
           export TRX_RESULTS_DIR="$RUNNER_TEMP/pipeline-evidence/trx"
           printf 'EXPECTED_INVENTORY=%s\nTRX_RESULTS_DIR=%s\n' "$EXPECTED_INVENTORY" "$TRX_RESULTS_DIR" >> "$GITHUB_ENV"
           python3 scripts/evidence_gate.py inventory --inventory "$EXPECTED_INVENTORY"
+          python3 scripts/spectra_mapping.py --commit "$GITHUB_SHA" --output "$RUNNER_TEMP/pipeline-evidence/spectra-expected.json" --coverage "$RUNNER_TEMP/pipeline-evidence/acceptance-links.json"
       - name: Restore
         run: dotnet restore src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj
       - name: Build
