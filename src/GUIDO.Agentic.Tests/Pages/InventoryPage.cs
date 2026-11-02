@@ -70,6 +70,26 @@ public class InventoryPage : BasePage
         Wait.Until(d => d.FindElements(CartBadge).Count > 0);
     }
 
+    /// <summary>Adds products using the same React click path as the single-item flow.</summary>
+    public void AddProductsToCart(int count)
+    {
+        WaitForLoad();
+        if (count < 1 || count > GetProducts().Count)
+            throw new ArgumentOutOfRangeException(nameof(count));
+        if (Driver.FindElements(CartBadge).Count != 0)
+            throw new InvalidOperationException("The multi-add scenario requires an initially empty cart.");
+
+        for (int index = 0; index < count; index++)
+        {
+            var button = Wait.Until(d => d.FindElements(AddToCartButton)
+                .FirstOrDefault(b => b.Displayed && b.Enabled && b.Text == "Add to cart"));
+            _js.ExecuteScript("arguments[0].click();", button!);
+            var expected = (index + 1).ToString();
+            // Re-resolve after every React render; never reuse the previous element.
+            Wait.Until(d => d.FindElements(CartBadge).Any(b => b.Text == expected));
+        }
+    }
+
     public void RemoveFirstProductFromCart()
     {
         var countBefore = Driver.FindElements(CartBadge).Count;
