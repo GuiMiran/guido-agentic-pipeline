@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "requirementsFile": ".spectra/11-acceptance-criteria.md",
+  "mappings": [
+    {
+      "testId": "AUTH-001",
+      "name": "Successful login with standard user",
+      "acceptanceId": "AC-001",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "AuthTests.StandardLogin"
+    },
+    {
+      "testId": "AUTH-002",
+      "name": "Login with locked-out user is rejected",
+      "acceptanceId": "AC-002",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "AuthTests.LockedOut"
+    },
+    {
+      "testId": "AUTH-003",
+      "name": "Login with invalid credentials shows error",
+      "acceptanceId": "AC-003",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "AuthTests.InvalidCredentials"
+    },
+    {
+      "testId": "AUTH-004",
+      "name": "Login without credentials shows required field error",
+      "acceptanceId": "AC-004",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "AuthTests.EmptyCredentials"
+    },
+    {
+      "testId": "AUTH-005",
+      "name": "Login with username only shows password required error",
+      "acceptanceId": "AC-005",
+      "scenarioFile": "specs/auth/login.feature",
+      "method": "AuthTests.MissingPassword"
+    },
+    {
+      "testId": "INVENTORY-001",
+      "name": "Inventory page displays products",
+      "acceptanceId": "AC-006",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.Products"
+    },
+    {
+      "testId": "INVENTORY-002",
+      "name": "Products can be sorted by name ascending",
+      "acceptanceId": "AC-007",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.NameAscending"
+    },
+    {
+      "testId": "INVENTORY-003",
+      "name": "Products can be sorted by name descending",
+      "acceptanceId": "AC-008",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.NameDescending"
+    },
+    {
+      "testId": "INVENTORY-004",
+      "name": "Products can be sorted by price low to high",
+      "acceptanceId": "AC-009",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.PriceAscending"
+    },
+    {
+      "testId": "INVENTORY-005",
+      "name": "Products can be sorted by price high to low",
+      "acceptanceId": "AC-010",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.PriceDescending"
+    },
+    {
+      "testId": "INVENTORY-006",
+      "name": "Adding a product to cart updates the cart badge",
+      "acceptanceId": "AC-011",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.Add"
+    },
+    {
+      "testId": "INVENTORY-007",
+      "name": "Removing a product from cart clears the cart badge",
+      "acceptanceId": "AC-012",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryTests.Remove"
+    },
+    {
+      "testId": "CART-001",
+      "name": "Cart page shows added item",
+      "acceptanceId": "AC-013",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartTests.AddedItem"
+    },
+    {
+      "testId": "CART-002",
+      "name": "Cart badge matches item count",
+      "acceptanceId": "AC-014",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartTests.TwoItems"
+    },
+    {
+      "testId": "CART-003",
+      "name": "Removing an item from cart updates the list",
+      "acceptanceId": "AC-015",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartTests.RemoveItem"
+    },
+    {
+      "testId": "CART-004",
+      "name": "Continue shopping returns to inventory",
+      "acceptanceId": "AC-016",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartTests.ContinueShopping"
+    },
+    {
+      "testId": "CART-005",
+      "name": "Checkout button navigates to checkout",
+      "acceptanceId": "AC-017",
+      "scenarioFile": "specs/cart/cart.feature",
+      "method": "CartTests.Checkout"
+    },
+    {
+      "testId": "CHECKOUT-001",
+      "name": "Complete checkout with valid information",
+      "acceptanceId": "AC-018",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.Complete"
+    },
+    {
+      "testId": "CHECKOUT-002",
+      "name": "Checkout fails with empty form",
+      "acceptanceId": "AC-019",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.EmptyForm"
+    },
+    {
+      "testId": "CHECKOUT-003",
+      "name": "Checkout fails without last name",
+      "acceptanceId": "AC-020",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.MissingLastName"
+    },
+    {
+      "testId": "CHECKOUT-004",
+      "name": "Checkout fails without zip code",
+      "acceptanceId": "AC-021",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.MissingZip"
+    },
+    {
+      "testId": "CHECKOUT-005",
+      "name": "Checkout overview displays order summary",
+      "acceptanceId": "AC-022",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.Summary"
+    },
+    {
+      "testId": "CHECKOUT-006",
+      "name": "Back Home after order completion returns to inventory",
+      "acceptanceId": "AC-023",
+      "scenarioFile": "specs/checkout/checkout.feature",
+      "method": "CheckoutTests.BackHome"
+    }
+  ]
+}
