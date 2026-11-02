@@ -82,6 +82,11 @@ def build_mapping(root, commit):
             relative = file.relative_to(root).as_posix()
             read_source(root, relative)
             files.add(relative)
+    for ident in headings:
+        section = re.search(rf'^## {ident} — .*?(?=^## |\Z)', requirements, re.M | re.S).group()
+        references = re.findall(r'^Source: `([^`]+)`', section, re.M)
+        if len(references) != 1 or references[0] not in files or not references[0].startswith('specs/'):
+            raise ValueError('Acceptance source reference is missing or unresolved')
     expected = inventory(root)
     facts = {}
     code = read_source(root, TESTS).decode('utf-8')

@@ -79,6 +79,14 @@ class MappingTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 build_mapping(self.root, COMMIT)
 
+    def test_unassessed_criterion_source_must_resolve_too(self):
+        file = self.root / REQUIREMENTS
+        text = file.read_text()
+        tail = text.index('## AC-024 —')
+        file.write_text(text[:tail] + text[tail:].replace('`specs/inventory/inventory.context.md`', '`../outside.md`', 1))
+        with self.assertRaisesRegex(ValueError, 'source reference'):
+            build_mapping(self.root, COMMIT)
+
     def test_stale_fact_or_documented_scenario_is_rejected(self):
         for relative, before, after in [(TESTS, 'void StandardLogin()', 'void RenamedLogin()'),
                                         ('specs/auth/login.feature', 'Scenario: Successful login', 'Scenario: Renamed login')]:
