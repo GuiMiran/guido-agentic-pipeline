@@ -45,3 +45,8 @@ Feature: Inventory
   @inventory
   Scenario: Standard user inventory contains exactly six products
     Then I should see exactly 6 products for standard_user
+
+  @inventory
+  Scenario: Every inventory product displays a non-empty description
+    Then I should see exactly 6 products for standard_user
+    And each product should have exactly one visible non-empty description

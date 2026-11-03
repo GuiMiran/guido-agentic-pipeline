@@ -20,6 +20,7 @@ https://www.saucedemo.com/inventory.html
 | Product list             | css      | .inventory_list                                |
 | Product item             | css      | .inventory_item                                |
 | Product name             | css      | .inventory_item_name                           |
+| Product description      | css      | .inventory_item_desc                           |
 | Product price            | css      | .inventory_item_price                          |
 | Add to cart button       | css      | .btn_inventory                                 |
 | Remove button            | css      | .btn_secondary.btn_inventory                   |
@@ -27,6 +28,15 @@ https://www.saucedemo.com/inventory.html
 | Cart badge               | css      | .shopping_cart_badge                           |
 | Cart link                | css      | .shopping_cart_link                            |
 | Page title               | css      | .title                                         |
+
+## Description selector verification
+
+Owner authorization to verify/document the missing description selector was
+granted on 2026-11-03. Selector `.inventory_item_desc` is scoped to each
+documented `.inventory_item`, not to residual tile text. A dedicated native
+Selenium Fact must verify exactly one matching visible, non-empty element per
+product against the configured SauceDemo application before PR readiness.
+Fresh CI/TRX provenance is recorded in the PR; this declaration is not proof.
 
 ## Sort Option Values
 

@@ -13,6 +13,7 @@ public class InventoryPage : BasePage
     private static readonly By PageTitle = By.CssSelector(".title");
     private static readonly By ProductItem = By.CssSelector(".inventory_item");
     private static readonly By ProductName = By.CssSelector(".inventory_item_name");
+    private static readonly By ProductDescription = By.CssSelector(".inventory_item_desc");
     private static readonly By ProductPrice = By.CssSelector(".inventory_item_price");
     private static readonly By AddToCartButton = By.CssSelector(".btn_inventory");
     private static readonly By RemoveButton = By.CssSelector(".btn_secondary.btn_inventory");
@@ -47,6 +48,12 @@ public class InventoryPage : BasePage
         GetProducts()
             .Select(p => p.FindElement(ProductName).Text)
             .ToList();
+
+    /// <summary>Preserves per-product description cardinality and visibility for AC-025.</summary>
+    public IReadOnlyList<IReadOnlyList<(bool Visible, string Text)>> GetProductDescriptions() =>
+        GetProducts().Select(product => (IReadOnlyList<(bool Visible, string Text)>)
+            product.FindElements(ProductDescription)
+                .Select(description => (description.Displayed, description.Text)).ToList()).ToList();
 
     public IReadOnlyList<decimal> GetProductPrices() =>
         GetProducts()

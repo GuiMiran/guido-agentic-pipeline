@@ -190,6 +190,13 @@
       "acceptanceId": "AC-028",
       "scenarioFile": "specs/checkout/overview-identity.feature",
       "method": "CheckoutObligationTests.OverviewPreservesProductIdentity"
+    },
+    {
+      "testId": "INVENTORY-009",
+      "name": "Every inventory product displays a non-empty description",
+      "acceptanceId": "AC-025",
+      "scenarioFile": "specs/inventory/inventory.feature",
+      "method": "InventoryObligationTests.ProductDescriptions"
     }
   ]
 }

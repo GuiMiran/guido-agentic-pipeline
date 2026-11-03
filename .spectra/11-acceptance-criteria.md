@@ -5,7 +5,7 @@ They are proposed links for owner review, not new business rules or proof of
 complete application coverage. The original specs remain unchanged.
 
 The original 23 criteria retain their assertion scope. Four further criteria
-now have dedicated test declarations; AC-025 remains explicitly UNASSESSED.
+have dedicated test declarations; AC-025 now also has a dedicated description Fact.
 Test declarations require fresh execution evidence. More untested rules may exist;
 28 is a reviewed local inventory, not an exhaustive product denominator.
 No static mapping, trait or generated inventory counts as execution evidence.
@@ -184,7 +184,9 @@ Backing scenario: `specs/inventory/inventory.feature` — `Standard user invento
 Every inventory product displays its description as required by the inventory business rules.
 
 Source: `specs/inventory/inventory.context.md`.
-Status: UNASSESSED — No documented description selector exists. Owner authorization to verify and document one is required; do not infer a description from residual product text.
+Declared test: `INVENTORY-009` / `InventoryObligationTests.ProductDescriptions`.
+Backing scenario: `specs/inventory/inventory.feature` — `Every inventory product displays a non-empty description`.
+Scope: exactly one visible non-empty description per product; not editorial correctness or completeness of its prose. Selector verification requires fresh CI after owner authorization on 2026-11-03.
 
 ## AC-026 — Cart-page removal badge
 
