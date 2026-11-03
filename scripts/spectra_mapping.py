@@ -18,7 +18,7 @@ REQUIREMENTS = '.spectra/11-acceptance-criteria.md'
 MANIFEST = 'specs/spectra-mapping.json'
 TESTS = 'src/GUIDO.Agentic.Tests/Tests/ScenarioTests.cs'
 REVIEWED_IDS = {f'AC-{i:03}' for i in range(1, 29)}
-KNOWN_UNASSESSED = {'AC-025'}  # Description selector still requires owner-approved documentation.
+KNOWN_UNASSESSED = set()  # All 28 local criteria have declarations; outcomes still require execution.
 FACT = re.compile(r'\[Fact\(DisplayName = "([^"]+)"\), Trait\("Spec", "([^"]+)"\)\]\s+public void (\w+)\(')
 
 
@@ -106,7 +106,7 @@ def build_mapping(root, commit):
     if {row['testId']: row['name'] for row in rows} != {item['id']: item['name'] for item in expected}:
         raise ValueError('Mapping differs from independent test inventory')
     if {row['acceptanceId'] for row in rows} != REVIEWED_IDS - KNOWN_UNASSESSED:
-        raise ValueError('Mapping must preserve 27 scoped criteria and the unassessed description obligation')
+        raise ValueError('Mapping must preserve all 28 scoped criteria')
     for row in rows:
         if facts.get(row['testId']) != (row['name'], row.get('method')):
             raise ValueError('Stale Fact name, trait or method reference')
@@ -128,7 +128,7 @@ def build_mapping(root, commit):
                 'declaredCriteria': len(headings), 'linkedCriteria': len(rows),
                 'unassessedCriteria': sorted(KNOWN_UNASSESSED),
                 'behaviourallyVerified': None,
-                'diagnostics': ['STATIC_LINKS_ARE_NOT_EXECUTION', 'DESCRIPTION_OBLIGATION_UNASSESSED']}
+                'diagnostics': ['STATIC_LINKS_ARE_NOT_EXECUTION', 'LOCAL_SCOPE_IS_NOT_EXHAUSTIVE_PRODUCT_COVERAGE']}
     return canonical, coverage
 
 

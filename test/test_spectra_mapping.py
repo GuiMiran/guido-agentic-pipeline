@@ -29,14 +29,14 @@ class MappingTests(unittest.TestCase):
     def write_manifest(self, manifest):
         (self.root / MANIFEST).write_text(json.dumps(manifest))
 
-    def test_complete_declared_links_keep_unassessed_obligations_separate(self):
+    def test_complete_declared_links_keep_execution_evidence_separate(self):
         expected, coverage = build_mapping(self.root, COMMIT)
-        self.assertEqual(len(expected['tests']), 27)
+        self.assertEqual(len(expected['tests']), 28)
         self.assertEqual(expected['tests'][0]['id'], 'AC-001')
         self.assertEqual(expected['tests'][0]['pipelineTestId'], 'AUTH-001')
         self.assertEqual(coverage['declaredCriteria'], 28)
-        self.assertEqual(coverage['linkedCriteria'], 27)
-        self.assertEqual(coverage['unassessedCriteria'], ['AC-025'])
+        self.assertEqual(coverage['linkedCriteria'], 28)
+        self.assertEqual(coverage['unassessedCriteria'], [])
         self.assertIsNone(coverage['behaviourallyVerified'])
         self.assertEqual((expected, coverage), build_mapping(self.root, COMMIT))
         self.assertTrue(any(item['file'] == REQUIREMENTS for item in expected['mapping']['files']))
@@ -44,7 +44,7 @@ class MappingTests(unittest.TestCase):
     def test_deleted_or_duplicate_mappings_are_rejected(self):
         original = self.manifest()
         for rows in [original['mappings'][:-1], original['mappings'] + [original['mappings'][0]],
-                     [original['mappings'][0]] * 27]:
+                     [original['mappings'][0]] * 28]:
             with self.subTest(rows=len(rows)):
                 modified = copy.deepcopy(original)
                 modified['mappings'] = rows
@@ -70,16 +70,15 @@ class MappingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'disagrees'):
             build_mapping(self.root, COMMIT)
 
-    def test_removed_or_duplicate_criteria_and_hidden_unassessed_scope_are_rejected(self):
+    def test_removed_or_duplicate_criteria_are_rejected(self):
         file = self.root / REQUIREMENTS
         original = file.read_text()
-        for changed in [original.replace('## AC-024 —', '## AC-999 —'), original + '\n## AC-001 — Duplicate\n',
-                        original.replace('Status: UNASSESSED', 'Status: COVERED')]:
+        for changed in [original.replace('## AC-024 —', '## AC-999 —'), original + '\n## AC-001 — Duplicate\n']:
             file.write_text(changed)
             with self.assertRaises(ValueError):
                 build_mapping(self.root, COMMIT)
 
-    def test_unassessed_criterion_source_must_resolve_too(self):
+    def test_all_criterion_sources_must_resolve(self):
         file = self.root / REQUIREMENTS
         text = file.read_text()
         tail = text.index('## AC-024 —')
@@ -113,6 +112,12 @@ class MappingTests(unittest.TestCase):
             with self.subTest(file=file_name), self.assertRaises(ValueError):
                 build_mapping(self.root, COMMIT)
             file.write_text(original)
+
+    def test_description_fact_cannot_disappear_while_count_fact_survives(self):
+        file = self.root / 'src/GUIDO.Agentic.Tests/Tests/InventoryObligationTests.cs'
+        file.write_text(file.read_text().replace('void ProductDescriptions()', 'void RenamedDescriptions()'))
+        with self.assertRaisesRegex(ValueError, 'Stale Fact'):
+            build_mapping(self.root, COMMIT)
 
     def test_helper_bytes_change_digest_without_becoming_proof(self):
         _, before = build_mapping(self.root, COMMIT)
