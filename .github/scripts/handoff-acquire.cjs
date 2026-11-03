@@ -6,7 +6,8 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const POLICY = Object.freeze({ owner: 'GuiMiran', repo: 'guido-agentic-pipeline', repositoryId: 1190006301,
   workflowId: 250433858, workflowPath: '.github/workflows/run-tests.yml', branch: 'main',
-  spectraCommit: 'bb561e388eb3406b1ddd4792c4f8e81769b108c6' });
+  spectraCommit: '025df70f7be2fc024e451eda9033909b691e9209',
+  auditorCommit: '497b6694de9315516ea297a48a470c5a5048abc1' });
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const gitSha = bytes => crypto.createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 const integer = value => Number.isSafeInteger(value) && value > 0;
