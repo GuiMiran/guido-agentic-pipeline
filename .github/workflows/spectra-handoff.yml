@@ -1,0 +1,107 @@
+name: SPECTRA evidence handoff
+on:
+  workflow_run:
+    workflows: ['Run Tests']
+    branches: [main]
+    types: [completed]
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/spectra-handoff.yml'
+      - '.github/scripts/handoff-*.cjs'
+      - 'scripts/evidence_handoff.py'
+      - 'test/*handoff*'
+      - 'docs/evidence-handoff.md'
+permissions:
+  contents: read
+concurrency:
+  group: spectra-handoff-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - run: node --test test/handoff.test.cjs
+      - run: python3 -m unittest discover -s test -p 'test_evidence_handoff.py' -v
+  acquire:
+    needs: controls
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       (github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure')) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      # workflow_run checks out the receiving default-branch revision, NOT source/PR code.
+      # Same-repo pull_request is an explicitly read-only smoke path, never privileged target.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Authenticate source, archive and versioned inventory
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          HANDOFF_BUNDLE: ${{ runner.temp }}/handoff-acquisition
+        with:
+          script: |
+            const { acquire } = require('./.github/scripts/handoff-acquire.cjs');
+            const receipt = await acquire({ github, context, outputDir: process.env.HANDOFF_BUNDLE });
+            core.info(JSON.stringify(receipt));
+      - name: Transfer verified data to isolated consumer job
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: verified-handoff-input
+          path: ${{ runner.temp }}/handoff-acquisition/
+          if-no-files-found: error
+          retention-days: 30
+  consume:
+    needs: acquire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: automation
+          persist-credentials: false
+      - name: Checkout reviewed SPECTRA revision, never artifact source code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: GuiMiran/spectra
+          ref: bb561e388eb3406b1ddd4792c4f8e81769b108c6
+          path: spectra
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: verified-handoff-input
+          path: ${{ runner.temp }}/handoff-bundle
+      - name: Revalidate digest, safe ZIP and authoritative inventory
+        run: env -i PATH="$PATH" python3 automation/scripts/evidence_handoff.py --bundle "$RUNNER_TEMP/handoff-bundle" --destination "$RUNNER_TEMP/handoff-input"
+      - name: Import data with pinned SPECTRA and a clean child environment
+        run: env -i PATH="$PATH" node automation/.github/scripts/handoff-import.cjs "$RUNNER_TEMP/handoff-bundle" "$RUNNER_TEMP/handoff-input" "$GITHUB_WORKSPACE/spectra" "$RUNNER_TEMP/handoff-output"
+      - name: Preserve custody receipt, scope ledger and SPECTRA evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: spectra-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/handoff-output/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
