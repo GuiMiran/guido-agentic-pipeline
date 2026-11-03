@@ -16,13 +16,13 @@ adapter, not cross-repository source execution, repair or autonomous promotion.
 | --- | --- | --- |
 | controls | contents:read | Deterministic adversarial Node/Python tests |
 | acquire | contents:read, actions:read | Authenticate run/artifact/source Git blobs via GitHub API; transfer inert ZIP + custody record |
-| consume | contents:read only | Fresh runner; revalidate ZIP/inventory; run pinned SPECTRA without acquisition token; retain results |
+| consume | contents:read only | Revalidate ZIP/inventory; run pinned SPECTRA and audit the authenticated source checkout as data, without acquisition token |
 
 No job has write permissions, OIDC, referenced secrets or cached untrusted
 dependencies. Upload/download of same-workflow artifacts uses GitHub's runtime
 artifact service; that service credential is not passed to the importer child.
 SPECTRA checkout is fixed to
-`bb561e388eb3406b1ddd4792c4f8e81769b108c6`. Updating it requires review.
+`025df70f7be2fc024e451eda9033909b691e9209`. Updating it requires review.
 No npm installation or package lifecycle hook runs.
 
 ## Provenance and inventory checks
@@ -64,6 +64,13 @@ its snapshot, gaps and non-passing receipt.
   coverage map, receipt, custody and acceptance scope ledger, retained 30 days.
 - `receipt.json`: source run/attempt/commit, artifact ID/digest, SPECTRA pin,
   actual parsed counts, qualification, unassessed criteria and output hashes.
+- `a1/`: pinned Scale inventory audit, A1 contracts, gap review and a receipt
+  binding their hashes to the authenticated source run. The source checkout
+  and auditor pin must match and stay clean. Source code is never executed
+  by the consumer. The A1 step retains valid negative evidence without
+  making a failed import green; malformed or missing output fails closed.
+  Scoped PASS generates no plan, and a measured failure can only generate
+  a deterministic human-review proposal. There is no execution or scoring.
 
 Hashes establish byte identity under GitHub/runner trust, not independent
 collector authenticity, assertion quality or a cryptographically signed supply

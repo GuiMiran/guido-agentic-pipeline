@@ -42,6 +42,8 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    outputs:
+      source_commit: ${{ steps.custody.outputs.source_commit }}
     permissions:
       contents: read
       actions: read
@@ -52,6 +54,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Authenticate source, archive and versioned inventory
+        id: custody
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           HANDOFF_BUNDLE: ${{ runner.temp }}/handoff-acquisition
@@ -59,6 +62,7 @@ jobs:
           script: |
             const { acquire } = require('./.github/scripts/handoff-acquire.cjs');
             const receipt = await acquire({ github, context, outputDir: process.env.HANDOFF_BUNDLE });
+            core.setOutput('source_commit', receipt.sourceCommit);
             core.info(JSON.stringify(receipt));
       - name: Transfer verified data to isolated consumer job
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -82,7 +86,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: GuiMiran/spectra
-          ref: bb561e388eb3406b1ddd4792c4f8e81769b108c6
+          ref: 025df70f7be2fc024e451eda9033909b691e9209
           path: spectra
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -94,8 +98,25 @@ jobs:
           path: ${{ runner.temp }}/handoff-bundle
       - name: Revalidate digest, safe ZIP and authoritative inventory
         run: env -i PATH="$PATH" python3 automation/scripts/evidence_handoff.py --bundle "$RUNNER_TEMP/handoff-bundle" --destination "$RUNNER_TEMP/handoff-input"
+      - name: Checkout authenticated source as audit data only
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.acquire.outputs.source_commit }}
+          path: target
+          persist-credentials: false
+      - name: Checkout reviewed read-only GUIDO auditor
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: GuiMiran/guido-sdd-migration-effort-scale
+          ref: 497b6694de9315516ea297a48a470c5a5048abc1
+          path: scale
+          persist-credentials: false
       - name: Import data with pinned SPECTRA and a clean child environment
+        id: import
         run: env -i PATH="$PATH" node automation/.github/scripts/handoff-import.cjs "$RUNNER_TEMP/handoff-bundle" "$RUNNER_TEMP/handoff-input" "$GITHUB_WORKSPACE/spectra" "$RUNNER_TEMP/handoff-output"
+      - name: Project A1 contracts and bounded gap review
+        if: ${{ !cancelled() && (steps.import.outcome == 'success' || steps.import.outcome == 'failure') }}
+        run: env -i PATH="$PATH" node automation/.github/scripts/handoff-a1.cjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
       - name: Preserve custody receipt, scope ledger and SPECTRA evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { POLICY, validateRun, validateArtifact, verifyArchive, sourceFiles, acquire } = require('../.github/scripts/handoff-acquire.cjs');
 const { verdictFor } = require('../.github/scripts/handoff-import.cjs');
+const { prepare } = require('../.github/scripts/handoff-a1.cjs');
 const clone = value => JSON.parse(JSON.stringify(value));
 const bytes = Buffer.from('archive bytes are never executed');
 const repo = { id: POLICY.repositoryId, full_name: `${POLICY.owner}/${POLICY.repo}` };
@@ -123,9 +124,34 @@ test('workflow separates token acquisition and clean pinned-code consumption wit
   const consume = yaml.split('\n  consume:')[1];
   assert.ok(!consume.includes('actions: read'));
   assert.ok(consume.includes(`ref: ${POLICY.spectraCommit}`));
+  assert.ok(consume.includes(`ref: ${POLICY.auditorCommit}`));
+  assert.ok(consume.includes('ref: ${{ needs.acquire.outputs.source_commit }}'));
+  assert.ok(consume.includes("steps.import.outcome == 'failure'"));
+  assert.ok(!consume.includes('continue-on-error'));
   assert.ok(consume.includes('persist-credentials: false'));
   assert.ok(consume.includes('env -i PATH="$PATH" node'));
   assert.ok(!yaml.includes('ref: ${{ github.event.workflow_run.head_sha }}'));
   assert.ok(yaml.includes('include-hidden-files: true'));
   assert.ok(!/npm (?:install|ci)|dotnet test|eval\(/.test(yaml));
+});
+
+test('A1 binds fresh receipt and bytes to authenticated custody and fixed tool pins', () => {
+  const { createHash } = require('node:crypto');
+  const snapshotBytes = Buffer.from('{}'), expectedBytes = Buffer.from('[]');
+  const snapshotSha256 = createHash('sha256').update(snapshotBytes).digest('hex');
+  const input = { snapshotBytes, expectedBytes, handoffRunId: 12,
+    receiptBytes: Buffer.from(JSON.stringify({ snapshotSha256 })),
+    custody: { schemaVersion: 1, acquisition: 'authenticated-github-actions-api', mode: 'workflow_run',
+      spectraCommit: POLICY.spectraCommit,
+      source: { repository: `${POLICY.owner}/${POLICY.repo}`, repositoryId: POLICY.repositoryId,
+        workflowId: POLICY.workflowId, commit: 'a'.repeat(40), runId: 10, attempt: 1 } } };
+  const pins = prepare(input);
+  assert.equal(pins.hashes.snapshotSha256, snapshotSha256);
+  assert.equal(pins.auditorCommit, POLICY.auditorCommit);
+  assert.equal(pins.handoffRunId, 12);
+  assert.throws(() => prepare({ ...input, snapshotBytes: Buffer.from('[]') }), /mismatch/);
+  for (const patch of [{ spectraCommit: 'b'.repeat(40) }, { acquisition: 'unverified' }, { mode: 'workflow_dispatch' }]) {
+    assert.throws(() => prepare({ ...input, custody: { ...input.custody, ...patch } }), /mismatch/);
+  }
+  assert.throws(() => prepare({ ...input, handoffRunId: 0 }), /mismatch/);
 });
