@@ -18,6 +18,10 @@ documented description selector and a dedicated presence/visibility test.
 CI freezes the canonical inventory and separate structural ledger before tests.
 Static links and a green execution are not full functional coverage.
 
+[Authenticated evidence handoff](docs/evidence-handoff.md) transfers verified
+native artifacts to a pinned SPECTRA importer in a separate read-only CI job.
+Results stay as CI artifacts; no PAT, SPECTRA source push or auto-repair is used.
+
 Current modules: Auth (6), Inventory (9), Cart (6), Checkout (7), against the
 public SauceDemo demonstration application. This is not exhaustive coverage.
 

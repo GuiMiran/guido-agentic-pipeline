@@ -94,7 +94,7 @@ narrow the acceptance gate to make it green.
 | Fresh native CI and host-assisted SPECTRA import | Required before ready for review |
 | Tests/assertions for AC-024, AC-026, AC-027, AC-028 | This change; require fresh native CI |
 | Verify/document description selector and test AC-025 | This change after owner authorization; fresh CI required before readiness |
-| Authenticated automatic Pipeline → SPECTRA handoff | Pending; currently host-assisted |
+| Authenticated automatic Pipeline → SPECTRA handoff | [Proposed read-only CI adapter](evidence-handoff.md); production requires merge and first workflow_run proof |
 
 No full A1/A2, automatic repair, organizational score, model-backed evaluation
 or autonomous promotion is claimed.
