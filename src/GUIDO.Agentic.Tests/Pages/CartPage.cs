@@ -19,6 +19,7 @@ public class CartPage : BasePage
     private static readonly By CheckoutButton = By.CssSelector("[data-test='checkout']");
     private static readonly By ContinueShoppingButton = By.CssSelector("[data-test='continue-shopping']");
     private static readonly By RemoveButtons = By.CssSelector(".cart_button");
+    private static readonly By CartBadge = By.CssSelector(".shopping_cart_badge");
 
     private readonly IJavaScriptExecutor _js;
 
@@ -60,6 +61,16 @@ public class CartPage : BasePage
 
     /// <summary>Returns true when the cart contains no items.</summary>
     public bool IsCartEmpty() => !HasItems();
+
+    /// <summary>Reads the visible badge using the documented cart selector.</summary>
+    public string GetCartBadgeText() => WaitForElement(CartBadge).Text;
+
+    /// <summary>Reports whether any cart badge is visible.</summary>
+    public bool IsCartBadgeVisible() => Driver.FindElements(CartBadge).Any(badge => badge.Displayed);
+
+    /// <summary>Waits for React to remove or hide the badge after the final item is removed.</summary>
+    public void WaitForCartBadgeToDisappear() =>
+        Wait.Until(d => d.FindElements(CartBadge).All(badge => !badge.Displayed));
 
     /// <summary>Returns true when each item has name, quantity, and price populated.</summary>
     public bool EachItemHasNameQuantityAndPrice() =>

@@ -39,3 +39,11 @@ Feature: Cart
     When I navigate to the cart page
     And I click checkout
     Then I should be on the checkout information page
+
+  @cart
+  Scenario: Removing the only cart item hides the cart badge
+    Given I add the first product to the cart from inventory
+    When I navigate to the cart page
+    And I remove the item from the cart
+    Then the cart should be empty
+    And the cart badge should not be visible

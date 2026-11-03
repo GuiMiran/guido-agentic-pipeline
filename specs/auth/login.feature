@@ -35,3 +35,10 @@ Feature: Login
     When I enter username "standard_user" and password ""
     And I click the login button
     Then I should see an error message containing "Password is required"
+
+  @auth @negative
+  Scenario: Unauthenticated inventory access returns to login
+    Given a fresh browser session with no authenticated user
+    When I navigate directly to the inventory URL
+    Then I should return to the configured login URL with visible login controls
+    And the inventory list should not be present

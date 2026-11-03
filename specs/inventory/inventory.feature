@@ -41,3 +41,7 @@ Feature: Inventory
     When I add the first product to the cart
     And I remove the first product from the cart
     Then the cart badge should not be visible
+
+  @inventory
+  Scenario: Standard user inventory contains exactly six products
+    Then I should see exactly 6 products for standard_user

@@ -19,8 +19,9 @@ no automated GUIDO score/check or branch-protection enforcement is claimed.
 The bounded issue-only triage remains disabled unless its owner enables it.
 
 CI also freezes [declared SPECTRA acceptance links](spectra-acceptance-mapping.md)
-as a separate canonical inventory. Its ledger retains five known unassessed
-obligations; a passing 23-test run does not certify those rules.
+as a separate canonical inventory. The current scope is 27 scenarios (original
+23 plus four obligation-specific tests). Its ledger retains AC-025 as
+unassessed; a passing run cannot certify product descriptions or full coverage.
 
 Run `dotnet test src/GUIDO.Agentic.Tests/GUIDO.Agentic.Tests.csproj --configuration Release`.
 The migration must pass all 23 cases in fresh CI before review/merge. Source

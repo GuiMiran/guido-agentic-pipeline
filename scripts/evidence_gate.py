@@ -18,8 +18,8 @@ def inventory(root):
     facts = []
     for file in (root / 'src/GUIDO.Agentic.Tests/Tests').glob('*.cs'):
         facts += re.findall(r'\[Fact\(DisplayName = "([^"]+)"\), Trait\("Spec", "([^"]+)"\)\]', file.read_text())
-    if len(names) != 23 or len(set(names)) != len(names):
-        raise ValueError('The reviewed migration scope must retain all 23 scenarios')
+    if len(names) != 27 or len(set(names)) != len(names):
+        raise ValueError('The reviewed scope must retain the original 23 scenarios and four added obligation cases (27 total)')
     if len(facts) != len(names) or set(n for n, _ in facts) != set(names) or len({i for _, i in facts}) != len(facts):
         raise ValueError('Missing/duplicate/mismatched Fact names or Spec IDs')
     return [{'id': ident, 'name': name} for name, ident in facts]

@@ -18,7 +18,7 @@ REQUIREMENTS = '.spectra/11-acceptance-criteria.md'
 MANIFEST = 'specs/spectra-mapping.json'
 TESTS = 'src/GUIDO.Agentic.Tests/Tests/ScenarioTests.cs'
 REVIEWED_IDS = {f'AC-{i:03}' for i in range(1, 29)}
-KNOWN_UNASSESSED = {f'AC-{i:03}' for i in range(24, 29)}
+KNOWN_UNASSESSED = {'AC-025'}  # Description selector still requires owner-approved documentation.
 FACT = re.compile(r'\[Fact\(DisplayName = "([^"]+)"\), Trait\("Spec", "([^"]+)"\)\]\s+public void (\w+)\(')
 
 
@@ -89,12 +89,13 @@ def build_mapping(root, commit):
             raise ValueError('Acceptance source reference is missing or unresolved')
     expected = inventory(root)
     facts = {}
-    code = read_source(root, TESTS).decode('utf-8')
-    for match in FACT.finditer(code):
-        classes = re.findall(r'public class (\w+) : BaseTest', code[:match.start()])
-        if not classes or match[2] in facts:
-            raise ValueError('Invalid or duplicate Fact identity')
-        facts[match[2]] = (match[1], f'{classes[-1]}.{match[3]}')
+    for test_file in sorted((root / 'src/GUIDO.Agentic.Tests/Tests').glob('*.cs')):
+        code = read_source(root, test_file.relative_to(root).as_posix()).decode('utf-8')
+        for match in FACT.finditer(code):
+            classes = re.findall(r'public class (\w+) : BaseTest', code[:match.start()])
+            if not classes or match[2] in facts:
+                raise ValueError('Invalid or duplicate Fact identity')
+            facts[match[2]] = (match[1], f'{classes[-1]}.{match[3]}')
     rows = manifest.get('mappings')
     if not isinstance(rows, list) or len(rows) != len(expected) or any(not isinstance(row, dict) for row in rows):
         raise ValueError('Exactly one mapping per independent scenario is required')
@@ -105,7 +106,7 @@ def build_mapping(root, commit):
     if {row['testId']: row['name'] for row in rows} != {item['id']: item['name'] for item in expected}:
         raise ValueError('Mapping differs from independent test inventory')
     if {row['acceptanceId'] for row in rows} != REVIEWED_IDS - KNOWN_UNASSESSED:
-        raise ValueError('Mapping must preserve the 23 scoped criteria and five unassessed obligations')
+        raise ValueError('Mapping must preserve 27 scoped criteria and the unassessed description obligation')
     for row in rows:
         if facts.get(row['testId']) != (row['name'], row.get('method')):
             raise ValueError('Stale Fact name, trait or method reference')
@@ -127,7 +128,7 @@ def build_mapping(root, commit):
                 'declaredCriteria': len(headings), 'linkedCriteria': len(rows),
                 'unassessedCriteria': sorted(KNOWN_UNASSESSED),
                 'behaviourallyVerified': None,
-                'diagnostics': ['STATIC_LINKS_ARE_NOT_EXECUTION', 'FIVE_KNOWN_OBLIGATIONS_UNASSESSED']}
+                'diagnostics': ['STATIC_LINKS_ARE_NOT_EXECUTION', 'DESCRIPTION_OBLIGATION_UNASSESSED']}
     return canonical, coverage
 
 

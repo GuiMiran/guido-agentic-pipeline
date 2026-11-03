@@ -4,8 +4,9 @@ These stable IDs normalize existing documented scenarios and context obligations
 They are proposed links for owner review, not new business rules or proof of
 complete application coverage. The original specs remain unchanged.
 
-The first 23 criteria are scoped to existing assertion behaviour. Five additional
-known obligations remain explicitly UNASSESSED. More untested rules may exist;
+The original 23 criteria retain their assertion scope. Four further criteria
+now have dedicated test declarations; AC-025 remains explicitly UNASSESSED.
+Test declarations require fresh execution evidence. More untested rules may exist;
 28 is a reviewed local inventory, not an exhaustive product denominator.
 No static mapping, trait or generated inventory counts as execution evidence.
 
@@ -175,32 +176,36 @@ Declared test: `CHECKOUT-006` / `CheckoutTests.BackHome`.
 The standard-user inventory shows exactly 6 products.
 
 Source: `specs/inventory/inventory.context.md`.
-Status: UNASSESSED — Products() asserts only greater than zero.
+Declared test: `INVENTORY-008` / `InventoryObligationTests.ExactProductCount`.
+Backing scenario: `specs/inventory/inventory.feature` — `Standard user inventory contains exactly six products`.
 
 ## AC-025 — Product descriptions
 
 Every inventory product displays its description as required by the inventory business rules.
 
 Source: `specs/inventory/inventory.context.md`.
-Status: UNASSESSED — The current product helper checks name, price and button, not description.
+Status: UNASSESSED — No documented description selector exists. Owner authorization to verify and document one is required; do not infer a description from residual product text.
 
 ## AC-026 — Cart-page removal badge
 
 Removing the only item from the cart page leaves an empty list and the cart badge disappears.
 
 Source: `specs/cart/cart.context.md`.
-Status: UNASSESSED — RemoveItem() checks the list only; inventory-page removal is a different flow.
+Declared test: `CART-006` / `CartObligationTests.RemovingOnlyItemClearsBadge`.
+Backing scenario: `specs/cart/cart.feature` — `Removing the only cart item hides the cart badge`.
 
 ## AC-027 — Unauthenticated inventory access
 
 Inventory access is restricted to authenticated users.
 
 Source: `specs/inventory/inventory.context.md`.
-Status: UNASSESSED — Inventory test setup logs in; no unauthenticated-access negative case exists.
+Declared test: `AUTH-006` / `UnauthorizedInventoryTests.DeniesUnauthenticatedInventory`.
+Backing scenario: `specs/auth/login.feature` — `Unauthenticated inventory access returns to login`.
 
 ## AC-028 — Overview item identity
 
 The checkout overview displays the item added to the cart, not merely any item.
 
 Source: `specs/checkout/checkout.context.md`.
-Status: UNASSESSED — HasOverviewItems() checks count > 0 without product identity.
+Declared test: `CHECKOUT-007` / `CheckoutObligationTests.OverviewPreservesProductIdentity`.
+Backing scenario: `specs/checkout/overview-identity.feature` — `Checkout overview preserves the added product identity`.
