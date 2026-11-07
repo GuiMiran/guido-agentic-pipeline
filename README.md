@@ -1,5 +1,8 @@
 # GUIDO Agentic Pipeline
 
+[Agent entry](AGENTS.md) · [Shared GUIDO SDD governance hub](https://github.com/GuiMiran/spectra/tree/main/docs/ecosystem)
+for component ownership, version baselines and cross-repository traceability.
+
 C#/.NET 8 + direct xUnit + Selenium Page Objects. No SpecFlow, Reqnroll or
 mandatory Allure. Specs drive review and traceability; Gherkin is documentation,
 not an execution dependency. The 23 original scenario names and assertions are
